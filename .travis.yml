@@ -4,9 +4,10 @@ python:
     - "3.6"
 install:
     - pip install -r requirements-dev.txt
+    - pip install -r requirements.txt
 script:
     - nosetests -q
-    - nosetests --with-coverage --cover-erase --cover-package=passphrase
+    - nosetests --with-coverage --cover-erase --cover-package=secretshare
 branches:
     only:
         - master
