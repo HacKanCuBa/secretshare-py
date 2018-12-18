@@ -27,7 +27,7 @@ from binascii import unhexlify, b2a_base64, a2b_base64, Error as binascii_Error
 from typing import List
 from math import ceil
 
-from passphrase.random import randbytes
+from passphrase.random import randint
 from passphrase.secrets import randbelow
 
 from .calc import int_to_bytes, compute_closest_bigger_equal_pow2, bytes_to_int
@@ -166,8 +166,12 @@ class Secret(AbstractValue):
 
     @staticmethod
     def random():
-        """Get a random value for the secret."""
-        return randbytes(Primes.max_bytes())
+        """Generate a random value for the secret."""
+        # Generating a random integer and then converting it to bytes ensures
+        # that information won't be lost in translation, which happened in a
+        # previous version using randbytes() when the value began with null
+        # bytes '\x00' (the are removed in translation)
+        return int_to_bytes(randint(Primes.max_bits()))
 
     def __init__(self, value: bytes = b''):
         if not value:
