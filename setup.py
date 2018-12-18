@@ -47,6 +47,7 @@ setup(
     packages=['secretshare'],
     python_requires='>=3.5',
     install_requires=[
+        'hc-passphrase',
     ],
     test_suite='nose.collector',
     tests_require=['nose'],
