@@ -111,3 +111,19 @@ the terms of that `license <LICENSE>`__.
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+.. |GitHub license| image:: https://img.shields.io/github/license/hackancuba/secretshare-py.svg
+   :target: https://github.com/HacKanCuBa/secretshare-py/blob/master/LICENSE
+.. |PyPI pyversions| image:: https://img.shields.io/pypi/pyversions/secretshare.svg
+   :target: https://pypi.python.org/pypi/secretshare/
+.. |PyPI version| image:: https://badge.fury.io/py/secretshare.svg
+   :target: https://badge.fury.io/py/secretshare
+.. |GitHub release| image:: https://img.shields.io/github/release/hackancuba/secretshare-py.svg
+   :target: https://github.com/hackancuba/secretshare-py/releases/
+.. |GitHub version| image:: https://badge.fury.io/gh/hackancuba%2Fsecretshare-py.svg
+   :target: https://badge.fury.io/gh/hackancuba%2Fsecretshare-py
+.. |Updates| image:: https://pyup.io/repos/github/HacKanCuBa/secretshare-py/shield.svg
+   :target: https://pyup.io/repos/github/HacKanCuBa/secretshare-py/
+.. |Build Status| image:: https://travis-ci.org/HacKanCuBa/secretshare-py.svg?branch=master
+   :target: https://travis-ci.org/HacKanCuBa/secretshare-py
