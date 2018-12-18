@@ -1,10 +1,23 @@
+[![GitHub license](https://img.shields.io/github/license/hackancuba/secretshare-py.svg)](https://github.com/HacKanCuBa/secretshare-py/blob/master/LICENSE) 
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/secretshare-py.svg)](https://pypi.python.org/pypi/secretshare/) 
+[![PyPI version](https://badge.fury.io/py/secretshare.svg)](https://badge.fury.io/py/secretshare-py) 
+[![GitHub release](https://img.shields.io/github/release/hackancuba/secretshare-py.svg)](https://github.com/hackancuba/secretshare-py/releases/) 
+[![GitHub version](https://badge.fury.io/gh/hackancuba%2Fsecretshare-py.svg)](https://badge.fury.io/gh/hackancuba%2Fsecretshare-py) 
+[![Updates](https://pyup.io/repos/github/HacKanCuBa/secretshare-py/shield.svg)](https://pyup.io/repos/github/HacKanCuBa/secretshare-py/) 
+[![Build Status](https://travis-ci.org/HacKanCuBa/secretshare-py.svg?branch=master)](https://travis-ci.org/HacKanCuBa/secretshare-py) 
+
 # SecretShare
 
 A simple library implementing Adi Shamir's "How to share a secret" algorithm. It is currently very limited since it uses integer arithmetic with primes, thus limiting the size of the shared secret to 512 bits (64 bytes). It is however very useful for cryptographic applications (which is the intended goal).
 
+## Requirements
+
+* Python 3.6+
+* [Passphrase](http://github.com/hackancuba/passphrase-py)
+
 ## Installation
 
-Clone the repo an run `make package-install` or, for development purposes, `make devenvironment`.
+Clone the repo an run `make package-install` or, for development purposes, `make devenvironment`. Install dependencies with `pip install -r requirements.txt`.
 
 ## Usage
 

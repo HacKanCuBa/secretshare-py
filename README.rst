@@ -1,3 +1,6 @@
+|GitHub license| |PyPI pyversions| |PyPI version| |GitHub release|
+|GitHub version| |Updates| |Build Status|
+
 SecretShare
 ===========
 
@@ -7,11 +10,18 @@ with primes, thus limiting the size of the shared secret to 512 bits (64
 bytes). It is however very useful for cryptographic applications (which
 is the intended goal).
 
+Requirements
+------------
+
+-  Python 3.6+
+-  `Passphrase <http://github.com/hackancuba/passphrase-py>`__
+
 Installation
 ------------
 
 Clone the repo an run ``make package-install`` or, for development
-purposes, ``make devenvironment``.
+purposes, ``make devenvironment``. Install dependencies with
+``pip install -r requirements.txt``.
 
 Usage
 -----
