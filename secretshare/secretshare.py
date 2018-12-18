@@ -30,7 +30,7 @@ from math import ceil
 from passphrase.random import randbytes
 from passphrase.secrets import randbelow
 
-from .calc import int_to_bytes, compute_closest_bigger_equal_pow2
+from .calc import int_to_bytes, compute_closest_bigger_equal_pow2, bytes_to_int
 from .calc import lagrange_interpolate, eval_poly_at_point
 
 
@@ -99,7 +99,7 @@ class AbstractValue:
         return b2a_base64(bytes(self)).decode('utf8')[:-1]
 
     def __int__(self) -> int:
-        return int.from_bytes(bytes(self), 'big')
+        return bytes_to_int(bytes(self))
 
     def __len__(self) -> int:
         return len(bytes(self))
@@ -214,9 +214,8 @@ class Share(AbstractValue):
         if not isinstance(bytes_value, bytes):
             raise TypeError('bytes_value must be bytes')
 
-        self.point = int.from_bytes(
-            bytes_value[:Share._get_max_point_bytes_len()][::-1],
-            'big'
+        self.point = bytes_to_int(
+            bytes_value[:Share._get_max_point_bytes_len()][::-1]
         )
         self.value = bytes_value[Share._get_max_point_bytes_len():]
 
@@ -348,7 +347,7 @@ class SecretShare:
             raise ValueError('shares can not be more than the share count')
 
         x_s = [share.point for share in self.shares]
-        y_s = [int.from_bytes(share.value, 'big') for share in self.shares]
+        y_s = [bytes_to_int(share.value) for share in self.shares]
         secret_int = lagrange_interpolate(0, x_s, y_s, self.prime)
         secret = Secret()
         secret.from_int(secret_int)

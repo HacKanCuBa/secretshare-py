@@ -21,12 +21,13 @@
 from unittest import TestCase
 
 from passphrase.secrets import randbelow
+from passphrase.random import randbytes
 
 from secretshare.tests.constants import WRONGTYPES_INT, WRONGTYPES_LIST_TUPLE,\
     WRONGTYPES_ITER
 from secretshare.calc import lagrange_interpolate, int_to_bytes, \
     eval_poly_at_point, compute_closest_bigger_equal_pow2, _product,\
-    _extended_gcd, _divmod
+    _extended_gcd, _divmod, bytes_to_int
 
 
 class TestValidInputs(TestCase):
@@ -57,6 +58,14 @@ class TestValidInputs(TestCase):
         self.assertEqual(result, b'\xff')
         result = int_to_bytes(0)
         self.assertEqual(result, b'\x00')
+
+    def test_bytes_to_int(self):
+        result = bytes_to_int(b'\x01')
+        self.assertEqual(result, 1)
+        result = bytes_to_int(b'\xff', True)
+        self.assertEqual(result, -1)
+        result = bytes_to_int(b'\x00')
+        self.assertEqual(result, 0)
 
     def test_compute_closest_bigger_equal_pow2(self):
         result = compute_closest_bigger_equal_pow2(0)
