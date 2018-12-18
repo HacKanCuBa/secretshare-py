@@ -21,7 +21,6 @@
 from unittest import TestCase
 
 from passphrase.secrets import randbelow
-from passphrase.random import randbytes
 
 from secretshare.tests.constants import WRONGTYPES_INT, WRONGTYPES_LIST_TUPLE,\
     WRONGTYPES_ITER
