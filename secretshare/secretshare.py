@@ -132,8 +132,9 @@ class AbstractValue:
         bts = a2b_base64(b64_value)
         self.from_bytes(bts)
 
-    def to_base64(self) -> str:
-        return str(self)
+    def to_base64(self) -> bytes:
+        """Get base64 representation conforming to RFC 3548."""
+        return b2a_base64(bytes(self))
 
 
 class Secret(AbstractValue):

@@ -102,7 +102,7 @@ class TestValidInputs(TestCase):
 
     def test_share_to_base64(self):
         share = Share(2, b'acab')
-        self.assertEqual(share.to_base64(), 'AgBhY2Fi')
+        self.assertEqual(share.to_base64(), b'AgBhY2Fi\n')
 
     def test_share_len(self):
         share = Share(2, b'acab')
