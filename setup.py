@@ -29,7 +29,6 @@ setup(
       'Natural Language :: English',
       'Operating System :: POSIX :: Linux',
       'Programming Language :: Python :: 3',
-      'Programming Language :: Python :: 3.5',
       'Programming Language :: Python :: 3.6',
       'Topic :: Security :: Cryptography',
       'Topic :: Utilities'
@@ -43,9 +42,9 @@ setup(
                  'v{}.tar.gz'.format(version),
     author='HacKan',
     author_email='hackan@gmail.com',
-    license='GNU GPL 3.0+',
+    license='GPLv3+',
     packages=['secretshare'],
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     install_requires=[
         'hc-passphrase',
     ],
