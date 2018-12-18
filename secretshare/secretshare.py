@@ -146,10 +146,17 @@ class Secret(AbstractValue):
 
     @value.setter
     def value(self, value: bytes):
+        """Secret value to split, in bytes.
+
+        Warning: if the value begins with null bytes, they will be lost in
+        translation to integers and the secret won't be recoverable!
+        """
         if not isinstance(value, bytes):
             raise TypeError('value must be bytes')
         if not value:
             raise ValueError('value can not be empty')
+        if value[0] == 0:
+            raise ValueError('value can not begin with a null byte')
         max_bytes = Primes.max_bytes()
         if len(value) > max_bytes:
             raise ValueError(
