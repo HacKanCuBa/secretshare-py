@@ -227,11 +227,11 @@ class SecretShare:
     https://en.wikipedia.org/wiki/Shamir's_Secret_Sharing#Python_example
     """
 
-    def __init__(self, threshold: int = 1, share_count: int = 2,
-                 secret: Secret = Secret()):
+    def __init__(self, threshold: int = 2, share_count: int = 3,
+                 secret: Secret = None):
         self.threshold = threshold
         self.share_count = share_count
-        self.secret = secret
+        self.secret = secret if secret else Secret()
         self.shares = []
 
     def _get_random_int(self):
@@ -247,8 +247,8 @@ class SecretShare:
         """Set the number of pieces required to recover the secret."""
         if not isinstance(threshold, int):
             raise TypeError('threshold must be int')
-        if threshold < 1:
-            raise ValueError('threshold must be >= 1')
+        if threshold < 2:
+            raise ValueError('threshold must be >= 2')
         self._threshold = threshold
 
     @property
