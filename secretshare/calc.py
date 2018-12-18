@@ -59,12 +59,16 @@ def eval_poly_at_point(poly: List[int], point: int, prime: int) -> int:
 
 
 def int_to_bytes(num: int) -> bytes:
-    """Convert an integer number into bytes."""
+    """Convert an integer number into bytes.
+
+    Note: reversibility is not assured!
+    """
     if not isinstance(num, int):
         raise TypeError('num_value must be integer')
     signed = num < 0
-    len_ = num.bit_length() // 8 + 1  # using ceil fails for 0
-    return num.to_bytes(len_, 'big', signed=signed)
+    length = ceil(num.bit_length() / 8) or 1  # For 0, bit_length is 0
+    return num.to_bytes(length, 'big', signed=signed)
+
 
 
 def _extended_gcd(a: int, b: int) -> Tuple[int, int]:
