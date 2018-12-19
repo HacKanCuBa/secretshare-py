@@ -23,7 +23,7 @@ from unittest import TestCase
 from passphrase.secrets import randbelow
 
 from secretshare.tests.constants import WRONGTYPES_INT, WRONGTYPES_LIST_TUPLE,\
-    WRONGTYPES_ITER
+    WRONGTYPES_ITER, WRONGTYPES_BYTES
 from secretshare.calc import lagrange_interpolate, int_to_bytes, \
     eval_poly_at_point, compute_closest_bigger_equal_pow2, _product,\
     _extended_gcd, _divmod, bytes_to_int
@@ -114,6 +114,10 @@ class TestInvalidInputs(TestCase):
     def test_int_to_bytes(self):
         for wrongtype in WRONGTYPES_INT:
             self.assertRaises(TypeError, int_to_bytes, wrongtype)
+
+    def test_bytes_to_int(self):
+        for wrongtype in WRONGTYPES_BYTES:
+            self.assertRaises(TypeError, bytes_to_int, wrongtype)
 
     def test_compute_closest_bigger_equal_pow2(self):
         for wrongtype in WRONGTYPES_INT:
