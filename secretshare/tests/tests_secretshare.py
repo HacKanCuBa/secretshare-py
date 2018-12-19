@@ -203,6 +203,8 @@ class TestInvalidInputs(TestCase):
                 secret.value = wrongtype
         with self.assertRaises(ValueError):
             secret.value = b''
+        with self.assertRaises(ValueError):
+            secret.value = b'\x00\x01'
         max_bytes = Primes.max_bytes()
         with self.assertRaises(ValueError):
             secret.value = b'aca' + b'b' * max_bytes
