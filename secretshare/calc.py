@@ -59,10 +59,7 @@ def eval_poly_at_point(poly: List[int], point: int, prime: int) -> int:
 
 
 def int_to_bytes(num: int) -> bytes:
-    """Convert an integer number into bytes.
-
-    Note: reversibility is not assured!
-    """
+    """Convert an integer number into bytes."""
     if not isinstance(num, int):
         raise TypeError('num_value must be integer')
     signed = num < 0
@@ -76,7 +73,9 @@ def bytes_to_int(bts: bytes, signed: bool = False) -> int:
     Whether the final int should be signed or not can't be determined, so it
     must be specified.
 
-    Note: reversibility is not assured!
+    Note: reversibility is not assured! I.E.: if the bytes string begins with
+    null values, those will be lost and converting the resulting integer into
+    bytes will yield a different value.
     """
     if not isinstance(bts, bytes):
         raise TypeError('bts must be bytes')
