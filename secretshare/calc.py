@@ -70,7 +70,7 @@ def int_to_bytes(num: int) -> bytes:
     return num.to_bytes(length, 'big', signed=signed)
 
 
-def bytes_to_int(bts: bytes, signed=False) -> int:
+def bytes_to_int(bts: bytes, signed: bool = False) -> int:
     """Convert a string of bytes to an integer number.
 
     Whether the final int should be signed or not can't be determined, so it
