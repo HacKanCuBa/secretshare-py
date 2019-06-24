@@ -17,12 +17,17 @@ A simple library implementing Adi Shamir's "How to share a secret" algorithm. It
 
 ## Installation
 
-Clone the repo an run `make package-install` or, for development purposes, `make devenvironment`. Install dependencies with `pip install -r requirements.txt`.
+Clone the repo an run `make package-install` or, for development purposes, `make devenvironment`. Install dependencies with `pipenv install` or `pip install -r requirements.txt`.
 
 ## Usage
 
 ```python
 from secretshare import SecretShare, Secret, Share
+
+
+def email(recipient, body):
+    print(f'Recipient: {recipient} - Body: {body}')
+
 
 # Generate a new secret
 secret = Secret()
@@ -37,12 +42,14 @@ secret.value = b'...'
 # Share the secret
 share_count = 5  # How many pieces will be secret be split into?
 threshold = 3    # How many pieces are required to recover the secret?
-shamir = SecretShare(threshold, share_count, secret)
+shamir = SecretShare(threshold, share_count, secret=secret)
 shares = shamir.split()
 
 # Now deliver the shares to each recipient
+recipients = ('r1@email.com', 'r2@email.com', 'r3@email.com', 'r4@email.com',
+              'r5@email.com')
 for i, share in enumerate(shares):
-    email(recipient[i], str(share))  # Send in base64
+    email(recipients[i], str(share))  # Send in base64
 # A Share can be converted to several convenient formats:
 # int(share)
 # bytes(share)
@@ -54,18 +61,18 @@ for i, share in enumerate(shares):
 
 # To recover the secret, get the share from each holder 
 s1 = Share()
-s1.from_int(1325546546320210215)
+s1.from_int(1100362525301)
 # A Share has a point and a value
-s2 = Share(2, b'as5d...44a')
+s2 = Share(2, b'l\xa1J\xd7')
 s3 = Share()
 # They are both encoded together for convenience
-s3.from_base64('AAk...ja==')
+s3.from_base64('BAD2lPfs')
 # The share count and threshold information is NOT saved anywhere
 # so the developer must save it somewhere as it is public
 # information and there's no risk in storing it.
-shamir = SecretShare(share_count, threshold)
-shamir.shares = [s1, s2, s3]
+shamir = SecretShare(share_count, threshold, shares=[s1, s2, s3])
 secret = shamir.combine()
+print(bytes(secret))  # b'...'
 # If the wrong number of shares is provided, an incorrect result
 # is obtained.
 # This is because this algorithm can't validate the result.

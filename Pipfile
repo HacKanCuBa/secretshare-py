@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+hc-passphrase = "~=1.2"
+
+[dev-packages]
+flake8 = "*"
+pydocstyle = "*"
+nose = "*"
+coverage = "*"
+ipdb = "*"
+flake8-rst-docstrings = "*"
+flake8-import-order = "*"
+flake8-blind-except = "*"
+flake8-builtins = "*"
+flake8-logging-format = "*"
+flake8-docstrings = "*"
+
+[requires]
+python_version = "3.7"

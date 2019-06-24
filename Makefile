@@ -30,7 +30,8 @@ package-uninstall:
 	pip uninstall secretshare
 
 lint:
-	flake8 --exclude=venv/ .
+	flake8 --exclude=tests secretshare/
+	flake8 --ignore=D100,D101,D102,D103,D104,D105,D106,D107 secretshare/tests/
 	pydocstyle -e --match-dir=secretshare .
 
 test:

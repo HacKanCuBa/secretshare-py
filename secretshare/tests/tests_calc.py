@@ -22,11 +22,11 @@ from unittest import TestCase
 
 from passphrase.secrets import randbelow
 
-from secretshare.tests.constants import WRONGTYPES_INT, WRONGTYPES_LIST_TUPLE,\
-    WRONGTYPES_ITER, WRONGTYPES_BYTES
-from secretshare.calc import lagrange_interpolate, int_to_bytes, \
-    eval_poly_at_point, compute_closest_bigger_equal_pow2, _product,\
-    _extended_gcd, _divmod, bytes_to_int
+from secretshare.calc import _divmod, _extended_gcd, _product, bytes_to_int, \
+    compute_closest_bigger_equal_pow2, eval_poly_at_point, int_to_bytes, \
+    lagrange_interpolate
+from secretshare.tests.constants import WRONGTYPES_BYTES, WRONGTYPES_INT, \
+    WRONGTYPES_ITER, WRONGTYPES_LIST_TUPLE, WRONGTYPES_SEQUENCE
 
 
 class TestValidInputs(TestCase):
@@ -129,7 +129,7 @@ class TestInvalidInputs(TestCase):
         for wrongtype in WRONGTYPES_INT:
             self.assertRaises(TypeError, eval_poly_at_point, [], wrongtype, 2)
             self.assertRaises(TypeError, eval_poly_at_point, [], 1, wrongtype)
-        for wrongtype in WRONGTYPES_LIST_TUPLE:
+        for wrongtype in WRONGTYPES_SEQUENCE:
             self.assertRaises(TypeError, eval_poly_at_point, wrongtype, 1, 2)
         self.assertRaises(ValueError, eval_poly_at_point, [], 1, -1)
 

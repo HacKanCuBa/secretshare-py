@@ -33,6 +33,12 @@ WRONGTYPES_LIST_TUPLE = (
     b'a',
 )
 
+WRONGTYPES_SEQUENCE = (
+    1234,
+    1.234,
+    1j,
+)
+
 WRONGTYPES_BYTES = (
     {1, 2},
     {'a': 1, 'b': 2},

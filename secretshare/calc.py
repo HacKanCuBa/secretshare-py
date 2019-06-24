@@ -23,7 +23,7 @@
 from functools import reduce
 from math import ceil, log2
 from operator import mul
-from typing import List, Iterable, Tuple
+from typing import Iterator, List, Sequence, Tuple
 
 # This file is largely based on
 # https://en.wikipedia.org/wiki/Shamir's_Secret_Sharing#Python_example
@@ -41,12 +41,12 @@ def compute_closest_bigger_equal_pow2(value: int) -> int:
     return 2 ** ceil(log2(value))
 
 
-def eval_poly_at_point(poly: List[int], point: int, prime: int) -> int:
+def eval_poly_at_point(poly: Sequence[int], point: int, prime: int) -> int:
     """Evaluate polynomial (coefficient tuple) at given point."""
     if not isinstance(point, int) or not isinstance(prime, int):
         raise TypeError('point and prime must be integers')
-    if not isinstance(poly, list):
-        raise TypeError('poly must be a list of integers')
+    if not isinstance(poly, Sequence):
+        raise TypeError('poly must be a reversible sequence of integers')
     if prime < 2:
         raise ValueError('prime must be positive and prime')
 
@@ -125,17 +125,15 @@ def _divmod(num: int, den: int, prime: int) -> int:
     return num * inv
 
 
-def _product(values: Iterable) -> int:
+def _product(values: Iterator[int]) -> int:
     """Compute the product over the given values."""
-    if not isinstance(values, Iterable):
-        raise TypeError('values must be an iterable of numbers')
     return reduce(mul, values, 1)
 
 
 def lagrange_interpolate(x: int, x_s: List[int], y_s: List[int], prime: int) -> int:
     """Find the y-value for the given x, given any number of (x, y) points.
 
-    k points will define a polynomial of up to kth order
+    k points will define a polynomial of up to kth order.
     """
     if not isinstance(x, int) or not isinstance(prime, int):
         raise TypeError('x and p must be integers')

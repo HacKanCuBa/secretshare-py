@@ -1,10 +1,16 @@
 language: python
+sudo: required
+dist: xenial
 python:
     - "3.6"
+    - "3.7"
 install:
     - pip install -r requirements-dev.txt
     - pip install -r requirements.txt
 script:
+    - flake8 --exclude=tests secretshare/
+    - flake8 --ignore=D100,D101,D102,D103,D104,D105,D106,D107 secretshare/tests/
+    - pydocstyle -e --match-dir=secretshare .
     - nosetests -q
     - nosetests --with-coverage --cover-erase --cover-package=secretshare
 branches:

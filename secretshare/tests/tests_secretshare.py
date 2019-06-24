@@ -20,9 +20,9 @@
 
 from unittest import TestCase
 
-from secretshare.tests.constants import WRONGTYPES_INT, WRONGTYPES_STR,\
-    WRONGTYPES_BYTES, WRONGTYPES, WRONGTYPES_STR_BYTES
-from secretshare.secretshare import Primes, Secret, Share, SecretShare
+from secretshare.secretshare import Primes, Secret, SecretShare, Share
+from secretshare.tests.constants import WRONGTYPES, WRONGTYPES_BYTES, \
+    WRONGTYPES_INT, WRONGTYPES_STR, WRONGTYPES_STR_BYTES
 
 
 class TestValidInputs(TestCase):
@@ -41,7 +41,7 @@ class TestValidInputs(TestCase):
         self.assertEqual(secret.value, b'acab')
 
     def test_secret_value(self):
-        secret = Secret
+        secret = Secret()
         secret.value = b'acab'
         self.assertEqual(secret.value, b'acab')
 
@@ -55,27 +55,35 @@ class TestValidInputs(TestCase):
         lst = ['a', 'b', 'c', 'd']
         self.assertEqual(lst[secret], 'c')
 
+    def test_secret_str(self):
+        secret = Secret(b'acab')
+        self.assertEqual(str(secret), 'YWNhYg==')
+
+    def test_secret_repr(self):
+        secret = Secret(b'acab')
+        self.assertEqual(repr(secret), "Secret(value=b'acab')")
+
     def test_share_init(self):
         share = Share(2, b'acab')
         self.assertEqual(share.point, 2)
         self.assertEqual(share.value, b'acab')
 
     def test_share_value(self):
-        share = Share
+        share = Share()
         share.value = b'acab'
         self.assertEqual(share.value, b'acab')
 
     def test_share_point(self):
-        share = Share
+        share = Share()
         share.point = 5
         self.assertEqual(share.point, 5)
 
     def test_share_get_max_point(self):
-        share = Share
+        share = Share()
         self.assertEqual(share._get_max_point(), 511)
 
     def test_share_get_max_point_bytes_len(self):
-        share = Share
+        share = Share()
         self.assertEqual(share._get_max_point_bytes_len(), 2)
 
     def test_share_bytes(self):
@@ -89,6 +97,10 @@ class TestValidInputs(TestCase):
     def test_share_str(self):
         share = Share(2, b'acab')
         self.assertEqual(str(share), 'AgBhY2Fi')
+
+    def test_share_repr(self):
+        share = Share(2, b'acab')
+        self.assertEqual(repr(share), "Share(point=2, value=b'acab')")
 
     def test_share_hex(self):
         share = Share(2, b'acab')
@@ -124,6 +136,10 @@ class TestValidInputs(TestCase):
         share.from_hex('0x20061636162')
         self.assertEqual(share.point, 2)
         self.assertEqual(share.value, b'acab')
+        share = Share()
+        share.from_hex('20061636162')
+        self.assertEqual(share.point, 2)
+        self.assertEqual(share.value, b'acab')
 
     def test_share_from_base64(self):
         share = Share()
@@ -135,10 +151,12 @@ class TestValidInputs(TestCase):
         secret = Secret(b'acab')
         threshold = 2
         share_count = 3
-        shamir = SecretShare(threshold, share_count, secret)
+        shares = Share(), Share(2)
+        shamir = SecretShare(threshold, share_count, secret=secret, shares=shares)
         self.assertEqual(shamir.threshold, threshold)
         self.assertEqual(shamir.share_count, share_count)
-        self.assertEqual(shamir.secret.value, secret.value)
+        self.assertEqual(shamir.secret, secret)
+        self.assertEqual(shamir.shares, list(shares))
 
     def test_secretshare_get_random_int(self):
         shamir = SecretShare()
@@ -168,8 +186,9 @@ class TestValidInputs(TestCase):
 
     def test_secretshare_split(self):
         secret = Secret(b'acab')
-        shamir = SecretShare(2, 3, secret)
+        shamir = SecretShare(2, 3, secret=secret)
         shares = shamir.split()
+        self.assertEqual(shares, shamir.shares)
         self.assertEqual(len(shares), 3)
         for share in shares:
             self.assertIsInstance(share, Share)
@@ -177,21 +196,23 @@ class TestValidInputs(TestCase):
 
     def test_secretshare_combine(self):
         shares_int = [1101130976934, 2200628050922, 3300125124910]
+        secret_expected = Secret(b'acab')
         shamir = SecretShare(2, 3)
         shamir.shares = []
         for share_int in shares_int[:2]:
             share = Share()
             share.from_int(share_int)
             shamir.shares.append(share)
-        shamir.combine()
-        self.assertEqual(shamir.secret.value, b'acab')
+        secret = shamir.combine()
+        self.assertEqual(secret.value, secret_expected.value)
+        self.assertEqual(shamir.secret.value, secret_expected.value)
         shamir.shares = []
         for share_int in shares_int[1:]:
             share = Share()
             share.from_int(share_int)
             shamir.shares.append(share)
         shamir.combine()
-        self.assertEqual(shamir.secret.value, b'acab')
+        self.assertEqual(shamir.secret.value, secret_expected.value)
 
 
 class TestInvalidInputs(TestCase):
