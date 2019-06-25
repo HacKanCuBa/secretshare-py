@@ -24,63 +24,17 @@ Implements Shamir's secret sharing algorithm.
 """
 
 from abc import ABC, abstractmethod
-from binascii import unhexlify, b2a_base64, a2b_base64, Error as binascii_Error
+from binascii import a2b_base64, b2a_base64
 from math import ceil
-from typing import Iterator, List, Optional, Tuple, Sequence, Union
+from typing import Iterator, List, Optional, Sequence, Tuple, Union
 
-from passphrase.random import randint
-from passphrase.secrets import randbelow
-
-from .calc import int_to_bytes, compute_closest_bigger_equal_pow2, bytes_to_int
-from .calc import lagrange_interpolate, eval_poly_at_point
+from .calc import bytes_to_int, int_to_bytes
+from .calc import eval_poly_at_point, lagrange_interpolate
+from .primes import Primes
 
 
-class Primes:
-    """Helper module to handle prime numbers."""
-
-    # The following primes are the closest bigger than 2^bits-1, assuring the
-    # required number of bits of security is met.
-    _PRIMES = {
-        8: 257,
-        16: 65537,
-        32: 4294967311,
-        64: 18446744073709551629,
-        128: 340282366920938463463374607431768211507,
-        # flake8: noqa: E501
-        256: 115792089237316195423570985008687907853269984665640564039457584007913129640233,
-        512: 2 ** 521 - 1,  # 13th Mersenne Prime
-    }
-
-    @staticmethod
-    def max_bits() -> int:
-        """Maximum amount of bits than can be processed with these primes."""
-        return sorted(Primes._PRIMES.keys())[-1]
-
-    @staticmethod
-    def max_bytes() -> int:
-        """Maximum amount of bytes than can be processed with these primes."""
-        return Primes.max_bits() // 8
-
-    @classmethod
-    def get(cls, bits: int) -> int:
-        """Get a prime number for the given number of security bits."""
-        return cls._PRIMES.get(bits)
-
-
-class AbstractValue(ABC):
-    """Abstract helper class to handle secret and share values."""
-
-    __slots__ = '_value',
-
-    @property
-    @abstractmethod
-    def value(self) -> bytes:
-        """Get the secret or share value."""
-
-    @value.setter
-    @abstractmethod
-    def value(self, value: bytes) -> None:
-        """Set the secret or share value."""
+class AbstractRepr(ABC):
+    """Abstract class that provides a generic repr method."""
 
     @property
     def _attributes(self) -> Tuple[str, ...]:
@@ -113,64 +67,71 @@ class AbstractValue(ABC):
             for attr in self._attributes
         )
 
-    def __init__(self, value: bytes = b''):
-        """Handle a secret or share."""
-        self.value = value
-
-    def __bytes__(self) -> bytes:
-        """Get the bytes representation of the object."""
-        return self.value
-
-    def __bool__(self) -> bool:
-        """Get the boolean equivalent of the object."""
-        return bool(self.value)
-
-    def __hex__(self) -> str:
-        """Get the hexadecimal string representation of the object."""
-        return hex(int(self))
-
-    def __oct__(self) -> str:
-        """Get the octal representation of the object."""
-        return oct(int(self))
-
-    def __str__(self) -> str:
-        """Get the string representation of the object."""
-        # b2a_base64 adds a newline char at the end
-        return b2a_base64(bytes(self)).decode('utf8')[:-1]
-
     def __repr__(self) -> str:
         """Get the unique representation of the object as string."""
         attributes_listed = ', '.join(f'{attr}={getattr(self, attr, None)}'
                                       for attr in self._get_attributes())
         return f'{self.__class__.__name__}({attributes_listed})'
 
+
+class AbstractValue(AbstractRepr):
+    """Abstract helper class to handle secret and share values."""
+
+    __slots__ = '_value',
+
+    @abstractmethod
+    def __bytes__(self) -> bytes:
+        """Get the bytes representation of the object."""
+
+    def __str__(self) -> str:
+        """Get the string representation of the object."""
+        # b2a_base64 adds a newline char at the end
+        return self.to_base64().decode('utf8')[:-1]
+
     def __int__(self) -> int:
         """Get the value of the object as integer."""
-        return bytes_to_int(bytes(self))
+        return self.value
 
-    def __len__(self) -> int:
-        """Get the length of the stored value."""
-        return len(bytes(self))
+    def __init__(self, value: Optional[int] = None):
+        """Handle values."""
+        self.value = value if value else 1
 
-    def __index__(self) -> int:
-        """Get the value of the object as integer, when used as index."""
-        return int(self)
+    @staticmethod
+    def max_value() -> int:
+        """Get the biggest possible value."""
+        return Primes.biggest() - 1
+
+    @property
+    def value(self) -> int:
+        """Get the value."""
+        return self._value
+
+    @value.setter
+    def value(self, value: int) -> None:
+        """Set the value."""
+        if not isinstance(value, int):
+            raise TypeError('value must be integer')
+        if value <= 0:
+            raise ValueError('value must be bigger than 0')
+        max_value = self.max_value()
+        if value > max_value:
+            raise ValueError(
+                f'value has to be smaller or equal than {max_value}'
+            )
+        self._value = value
 
     @abstractmethod
     def from_bytes(self, bytes_value: bytes) -> None:
         """Set object values from bytes."""
 
-    def from_int(self, num_value: int) -> None:
-        """Set object values from integer."""
-        self.from_bytes(int_to_bytes(num_value))
-
     def from_hex(self, hex_value: str) -> None:
-        """Set object values from hex string."""
+        """Set object values from hex string (support beggining with 0x)."""
         try:
-            bts = unhexlify(hex_value)
-        except binascii_Error:
+            bts = bytes.fromhex(hex_value)
+        except ValueError:
             hex_val = hex_value[2:] if hex_value[:2] == '0x' else hex_value
-            bts = unhexlify('0' + hex_val)
+            hex_ = '0' + hex_val if len(hex_val) % 2 else hex_val
+            bts = bytes.fromhex(hex_)
         self.from_bytes(bts)
 
     def from_base64(self, b64_value: Union[bytes, str]) -> None:
@@ -178,63 +139,66 @@ class AbstractValue(ABC):
         bts = a2b_base64(b64_value)
         self.from_bytes(bts)
 
+    def to_hex(self) -> str:
+        """Get the hexadecimal string representation of the object."""
+        return bytes(self).hex()
+
     def to_base64(self) -> bytes:
         """Get the base64 representation of the object conforming to RFC 3548."""
         return b2a_base64(bytes(self))
+
+    def to_bytes(self) -> bytes:
+        """Get the representation of the object as bytes (same as bytes(`self`))."""
+        return bytes(self)
 
 
 class Secret(AbstractValue):
     """Helper class to handle a secret value."""
 
-    @property
-    def value(self) -> bytes:
-        """Get the secret value."""
-        return self._value
-
-    @value.setter
-    def value(self, value: bytes):
-        """Set the secret value to split, in bytes.
-
-        Note: the secret value can't begin with null bytes because it would be
-        lost in translation to integer and then it wouldn't be recoverable!
-        """
-        if not isinstance(value, bytes):
-            raise TypeError('value must be bytes')
-        if not value:
-            raise ValueError('value can not be empty')
-        if value[0] == 0:
-            raise ValueError('value can not begin with a null byte')
-        max_bytes = Primes.max_bytes()
-        if len(value) > max_bytes:
-            raise ValueError(
-                f'value has to be smaller or equal than {max_bytes} bytes'
-            )
-        self._value = value
-
-    def from_bytes(self, bytes_value: bytes) -> None:
-        """Set secret value from bytes."""
-        if not isinstance(bytes_value, bytes):
-            raise TypeError('bytes_value must be bytes')
-        self.value = bytes_value
-
-    @staticmethod
-    def random() -> bytes:
-        """Generate a random value for the secret."""
-        # Generating a random integer and then converting it to bytes ensures
-        # that information won't be lost in translation, which happened in a
-        # previous version using randbytes() when the value began with null
-        # bytes '\x00' (the are removed in translation)
-        return int_to_bytes(randint(Primes.max_bits()))
-
-    def __init__(self, value: bytes = b''):
+    def __init__(self, value: Optional[int] = None):
         """Handle a secret, providing several helper functions.
 
         :param value: A secret value to store. If not indicated, a random one
                       is generated.
         """
-        if not value:
-            value = self.random()
         super().__init__(value)
+        if not value:
+            self.random()
+
+    def __bytes__(self) -> bytes:
+        """Get the value of the secret as bytes."""
+        return int_to_bytes(self.value)
+
+    @staticmethod
+    def max_bits() -> int:
+        """Get the maximum number of bits the secret can hold."""
+        return Primes.max_bits()
+
+    @classmethod
+    def max_bytes(cls) -> int:
+        """Get the maximum number of bytes the secret can hold."""
+        return cls.max_bits() // 8
+
+    def from_bytes(self, bytes_value: bytes) -> None:
+        """Set secret value from bytes."""
+        if not isinstance(bytes_value, bytes):
+            raise TypeError('bytes_value must be bytes')
+        if bytes_value[0] == 0:
+            raise ValueError('bytes_value can not begin with a null byte')
+        self.value = bytes_to_int(bytes_value)
+
+    def random(self, bits: Optional[int] = None) -> None:
+        """Generate a random value for the secret.
+
+        :param bits: Number of bits to use for generation (defaults to the
+                     maximum number of bits possible).
+        """
+        num_bits = bits if bits else self.max_bits()
+        self.value = Primes.random_int(num_bits)
+
+    def bit_length(self) -> int:
+        """Gte the number of bits necessary to represent self in binary."""
+        return self.value.bit_length()
 
 
 class Share(AbstractValue):
@@ -247,45 +211,10 @@ class Share(AbstractValue):
     __slots__ = '_point',
 
     @property
-    def value(self) -> bytes:
-        """Get the share value."""
-        return self._value
+    def _max_point_bytes_len(self) -> int:
+        return ceil(self.max_point().bit_length() / 8)
 
-    @value.setter
-    def value(self, value: bytes) -> None:
-        """Set the share value."""
-        if not isinstance(value, bytes):
-            raise TypeError('value must be bytes')
-        self._value = value
-
-    @property
-    def point(self) -> int:
-        """Get the share point."""
-        return self._point
-
-    @point.setter
-    def point(self, point: int):
-        """Set the share point."""
-        if not isinstance(point, int):
-            raise TypeError('point must be integer')
-        if point < 1:
-            raise ValueError('point must be bigger than or equal to 1')
-        max_point = Share._get_max_point()
-        if point > max_point:
-            raise ValueError(
-                f'point must be smaller than or equal to {max_point}'
-            )
-        self._point = point
-
-    @staticmethod
-    def _get_max_point() -> int:
-        return Primes.max_bits() - 1
-
-    @staticmethod
-    def _get_max_point_bytes_len() -> int:
-        return ceil(Share._get_max_point().bit_length() / 8)
-
-    def __init__(self, point: int = 1, value: bytes = b''):
+    def __init__(self, point: int = 1, value: Optional[int] = None):
         """Create a share consisting on a point and a value.
 
         The point is evaluated on a polynomial function, obtaining the value.
@@ -296,17 +225,16 @@ class Share(AbstractValue):
         super().__init__(value)
         self.point = point
 
-    def __bytes__(self) -> bytes:
-        """Get the representation in bytes of the share."""
-        point_bytes = self.point.to_bytes(Share._get_max_point_bytes_len(),
-                                          'big')
-        # reverse point_bytes because most of the times it has a \x00 as MSB,
-        # which gets lost on encodings/transformations such as int
-        return point_bytes[::-1] + self.value
-
     def __index__(self) -> int:
         """Get the value of `point` for use of the object as index."""
         return self.point
+
+    def __bytes__(self) -> bytes:
+        """Get the representation in bytes of the share."""
+        point_bytes = self.point.to_bytes(self._max_point_bytes_len, 'big')
+        # reverse point_bytes because most of the times it has a \x00 as MSB,
+        # which gets lost on encodings/transformations such as int
+        return point_bytes[::-1] + int_to_bytes(self.value)
 
     def from_bytes(self, bytes_value: bytes) -> None:
         """Set share point and value from bytes.
@@ -316,21 +244,47 @@ class Share(AbstractValue):
         if not isinstance(bytes_value, bytes):
             raise TypeError('bytes_value must be bytes')
 
-        self.point = bytes_to_int(
-            bytes_value[:Share._get_max_point_bytes_len()][::-1]
-        )
-        self.value = bytes_value[Share._get_max_point_bytes_len():]
+        point_bytes_len = self._max_point_bytes_len
+        self.point = bytes_to_int(bytes_value[:point_bytes_len][::-1])
+        self.value = bytes_to_int(bytes_value[point_bytes_len:])
+
+    @staticmethod
+    def max_point() -> int:
+        """Get the biggest possible point."""
+        return Primes.max_bits() - 1
+
+    @property
+    def point(self) -> int:
+        """Get the share point."""
+        return self._point
+
+    @point.setter
+    def point(self, point: int) -> None:
+        """Set the share point."""
+        if not isinstance(point, int):
+            raise TypeError('point must be integer')
+        if point < 1:
+            raise ValueError('point must be bigger than or equal to 1')
+        max_point = self.max_point()
+        if point > max_point:
+            raise ValueError(
+                f'point must be smaller than or equal to {max_point}'
+            )
+        self._point = point
 
 
-class SecretShare:
+class SecretShare(AbstractRepr):
     """Shamir's Secret Share using integer arithmetic.
 
     Largely based on
     https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing#Python_example
     """
 
+    __slots__ = '_secret', '_share_count', '_shares', '_threshold',
+
     def __init__(self, threshold: int = 2, share_count: int = 3, *,
-                 secret: Optional[Secret] = None, shares: Optional[Sequence[Share]] = None):
+                 secret: Optional[Secret] = None,
+                 shares: Optional[Sequence[Share]] = None):
         """Share a secret using Shamir's secret share algorithm.
 
         :param threshold: Minimal amount of parts required to recover the
@@ -345,8 +299,33 @@ class SecretShare:
         self.secret = secret if secret else Secret()
         self.shares = shares if shares else []
 
-    def _get_random_int(self) -> int:
-        return randbelow(self.prime)
+    def _prime(self, *, combine: bool = False) -> int:
+        """Get the prime number in use for the field.
+
+        :param combine: True to get the number for a combination of shares,
+                        False to get the number for a secret splitting.
+        """
+        if combine:
+            num = max(share.value for share in self.shares)
+        else:
+            num = int(self.secret)
+        return Primes.get_closest(num=num)
+
+    @property
+    def _prime_for_split(self) -> int:
+        """Get the prime used to split a secret."""
+        return self._prime()
+
+    @property
+    def _prime_for_combine(self) -> int:
+        """Get the prime used to combine shares."""
+        return self._prime(combine=True)
+
+    def _generate_random_poly(self) -> List[int]:
+        """Generate a random polynomial for Shamir's secret splitting."""
+        bits = Primes.get_closest_bits(num=int(self.secret))
+        return [int(self.secret)] + \
+               [Primes.random_int(bits) for _ in range(self.threshold - 1)]
 
     @property
     def threshold(self) -> int:
@@ -360,7 +339,7 @@ class SecretShare:
             raise TypeError('threshold must be int')
         if threshold < 2:
             raise ValueError('threshold must be >= 2')
-        self._threshold = threshold
+        self._threshold: int = threshold
 
     @property
     def share_count(self) -> int:
@@ -374,7 +353,7 @@ class SecretShare:
             raise TypeError('share_count must be int')
         if share_count < 2:
             raise ValueError('share_count must be >= 2')
-        self._share_count = share_count
+        self._share_count: int = share_count
 
     @property
     def secret(self) -> Secret:
@@ -383,11 +362,15 @@ class SecretShare:
 
     @secret.setter
     def secret(self, secret: Secret) -> None:
-        """Set a secret to split and share."""
+        """Set a secret to split and share.
+
+        Note: this will reset the shares (if any) and the polynomial.
+        """
         if not isinstance(secret, Secret):
             raise TypeError('secret must be Secret')
         # The Secret class ensures it's not empty
-        self._secret = secret
+        self._secret: Secret = secret
+        self._shares = []
 
     @property
     def shares(self) -> List[Share]:
@@ -402,58 +385,54 @@ class SecretShare:
         for share in shares:
             if not isinstance(share, Share):
                 raise TypeError('shares must be sequence of Share objects')
-        self._shares = list(shares)
-
-    @property
-    def prime(self) -> int:
-        """Get the current prime number in use for the field."""
-        return Primes.get(compute_closest_bigger_equal_pow2(len(self.secret)) * 8)
-
-    @property
-    def poly(self) -> List[int]:
-        """Get the polynomial to use for Shamir's secret splitting."""
-        return [int(self.secret)] + \
-               [self._get_random_int() for _ in range(self.threshold - 1)]
+        self._shares: List[Share] = list(shares)
 
     @property
     def max_share_count(self) -> int:
-        """Get the maximum share count."""
-        # max share count is one less than the max number of bytes that can be
+        """Get the maximum share count for splitting a given secret.
+
+        Note: the secret must be set from beforehand.
+        """
+        # max share count is one less than the max number of bits that can be
         # computed using the selected prime, which in turn depends on the
         # secret length
-        return compute_closest_bigger_equal_pow2(len(self.secret)) * 8 - 1
+        return self.secret.value.bit_length() - 1
 
     def split(self) -> List[Share]:
-        """Split a secret securely using Shamir's algorithm."""
+        """Split a secret securely using Shamir's algorithm.
+
+        Every call to this method will compute different shares.
+        """
         # Validations
         max_share_count = self.max_share_count
+        prime = self._prime_for_split
         if self.share_count > max_share_count:
-            raise ValueError(f'share_count must be lower than {max_share_count}'
-                             f' for the given secret')
+            raise ValueError(f'share_count must be lower than {max_share_count} '
+                             f'for the given secret')
         if self.threshold > self.share_count:
             raise ValueError('share_count must be bigger than or equal to '
                              'threshold')
 
-        poly = self.poly
-        prime = self.prime
-        shares = []
-        for i in range(1, self.share_count + 1):
-            value = eval_poly_at_point(poly, i, prime)
-            shares.append(Share(i, int_to_bytes(value)))
-        self.shares = shares
-        return shares
+        self.shares = []
+        poly = self._generate_random_poly()
+        for point in range(1, self.share_count + 1):
+            share = Share(point, value=eval_poly_at_point(poly, point, prime))
+            self.shares.append(share)
+        return self.shares
 
     def combine(self) -> Secret:
         """Combine shares of a split secret to recover it."""
-        if len(self.shares) < 2:
-            raise ValueError('shares must have 2 or more Share')
         if len(self.shares) > self.share_count:
-            raise ValueError('shares can not be more than the share count')
+            raise ValueError(
+                'the number of shares can not be more than the share count'
+            )
+        if len(self.shares) < self.threshold:
+            raise ValueError(
+                'the number of shares must be bigger or equal than the threshold'
+            )
 
+        prime = self._prime_for_combine
         x_s = [share.point for share in self.shares]
-        y_s = [bytes_to_int(share.value) for share in self.shares]
-        secret_int = lagrange_interpolate(0, x_s, y_s, self.prime)
-        secret = Secret()
-        secret.from_int(secret_int)
-        self.secret = secret
-        return secret
+        y_s = [share.value for share in self.shares]
+        self.secret = Secret(lagrange_interpolate(0, x_s, y_s, prime))
+        return self.secret

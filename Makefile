@@ -48,7 +48,7 @@ lint:
 
 .PHONY: test
 test:
-	nosetests -v
+	nosetests --verbose --processes=-1 --detailed-errors
 
 .PHONY: coverage
 coverage:

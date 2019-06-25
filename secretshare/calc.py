@@ -18,7 +18,7 @@
 #
 #  ***************************************************************************
 
-"""Auxiliary calculations for ShareSecrets."""
+"""Auxiliary calculations for SecretShare."""
 
 from functools import reduce
 from math import ceil, log2
